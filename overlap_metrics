@@ -52,6 +52,7 @@ for i in list(itertools.permutations(summ16.sample_id.unique(), 2)):
     
     ## calculate the Jaccard index
     overlap16['Jaccard'] = overlap16['intersect_size'] / overlap16['ttl_size']
+    overlap16['Jaccard'] = overlap16.Jaccard.fillna(0)
 
     ## add some additional data for further visualisation 
     overlap16['ccp'] = [x.split('_')[0] for x in overlap16.sample1]
