@@ -1,5 +1,5 @@
 ## select the data subset
-summ16 = summ_df.query('ccp=="ccp16"')
+summ16 = summ_df_rev.query('ccp=="ccp16"')
 
 ## add a column with repertoire size
 summ16['size'] = summ16.groupby('sample_id')['uniqueMoleculeCount'].transform('sum')
@@ -15,7 +15,7 @@ F2 = []
 
 
 ## iterate over the df to find all pairwise permutations of samples
-for i in list(itertools.permutations(summ_df.query('ccp=="ccp16"').sample_id.unique(), 2)):
+for i in list(itertools.permutations(summ16.sample_id.unique(), 2)):
 
     ## select the necessary columns for both samples in the pair
     s1 = summ16.loc[summ16.sample_id == i[0]][['nSeqCDR3', 'uniqueMoleculeCount', 'uniqueMoleculeFraction', 'size']]
@@ -33,8 +33,17 @@ for i in list(itertools.permutations(summ_df.query('ccp=="ccp16"').sample_id.uni
     ## add data to final df    
     sample1.append(i[0])
     sample2.append(i[1])
-    ttl_size.append(d.ttl_size[0])
-    intersect.append(d.intersect_size[0])
+
+    ## handle exceptions in case there is no overlap between samples 
+    try:
+        ttl_size.append(d.ttl_size[0])
+    except (IndexError, ValueError):
+        ttl_size.append(0)
+    try:
+        intersect.append(d.intersect_size[0])
+    except (IndexError, ValueError):
+        intersect.append(0)
+
     F2.append(sum(d.fr_fr))
 
     ## make the final df
