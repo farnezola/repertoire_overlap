@@ -1,0 +1,52 @@
+## select the data subset
+summ16 = summ_df.query('ccp=="ccp16"')
+
+## add a column with repertoire size
+summ16['size'] = summ16.groupby('sample_id')['uniqueMoleculeCount'].transform('sum')
+
+
+## create empty lists for future df columns
+sample1 = []
+sample2 = []
+ttl_size = []
+smaller = []
+intersect = []
+F2 = []
+
+
+## iterate over the df to find all pairwise permutations of samples
+for i in list(itertools.permutations(summ_df.query('ccp=="ccp16"').sample_id.unique(), 2)):
+
+    ## select the necessary columns for both samples in the pair
+    s1 = summ16.loc[summ16.sample_id == i[0]][['nSeqCDR3', 'uniqueMoleculeCount', 'uniqueMoleculeFraction', 'size']]
+    s2 = summ16.loc[summ16.sample_id == i[1]][['nSeqCDR3', 'uniqueMoleculeCount', 'uniqueMoleculeFraction', 'size']]
+
+    ## add samples to final df
+    d = s1.merge(s2, how='inner', on='nSeqCDR3')
+    ## calculate the overlap size
+    d['intersect_size'] = sum(d['uniqueMoleculeCount_x'] + d['uniqueMoleculeCount_y'])
+    ## calculate the total size of repertoires in the pair
+    d['ttl_size'] = d['size_x'] + d['size_y']
+    ## calculate the F2 metric
+    d['fr_fr'] = (d.uniqueMoleculeFraction_x * d.uniqueMoleculeFraction_y)**0.5
+
+    ## add data to final df    
+    sample1.append(i[0])
+    sample2.append(i[1])
+    ttl_size.append(d.ttl_size[0])
+    intersect.append(d.intersect_size[0])
+    F2.append(sum(d.fr_fr))
+
+    ## make the final df
+    overlap16 = pd.DataFrame(list(zip(sample1 ,sample2, ttl_size, intersect, F2)),
+               columns =['sample1', 'sample2', 'ttl_size', 'intersect_size', 'F2'])
+    
+    ## calculate the Jaccard index
+    overlap16['Jaccard'] = overlap16['intersect_size'] / overlap16['ttl_size']
+
+    ## add some additional data for further visualisation 
+    overlap16['ccp'] = [x.split('_')[0] for x in overlap16.sample1]
+    overlap16['group1'] = [x.split('_')[1] for x in overlap16.sample1]
+    overlap16['group2'] = [x.split('_')[1] for x in overlap16.sample2]
+
+overlap16
